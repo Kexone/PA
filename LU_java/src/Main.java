@@ -9,12 +9,10 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) throws IOException {
+        BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
         while(true) {
             System.out.print("Select count of threads and matrix rows:    [int int]\n");
-
-            BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-            String line = stdin.readLine();
-            String[] input = line.split(" ");
+            String[] input = stdin.readLine().split(" ");
             if (input.length == 2) {
                 System.out.println((input[0] + "   " + input[1]));
             } else {
