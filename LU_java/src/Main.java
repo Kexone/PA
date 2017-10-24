@@ -1,21 +1,16 @@
-import com.sun.javafx.scene.layout.region.Margins;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) throws IOException {
         BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
         while(true) {
-            System.out.print("Select count of threads and matrix rows:    [int int]\n");
+            System.out.print("Select count of threads and matrix rows and verbose (y / n):    [int int string]\n");
             String[] input = stdin.readLine().split(" ");
-            if (input.length == 2) {
-                System.out.println((input[0] + "   " + input[1]));
-            } else {
+            if (input.length != 3) {
                 System.out.print("Error input, pls select it like '1 1'\n");
                 continue;
             }
@@ -24,7 +19,9 @@ public class Main {
     }
 
     public static void run(String[] par) {
-        Matrix mat = new Matrix(Integer.parseInt(par[0]), Integer.parseInt(par[0]));
-        mat.printMatrix();
+        LUFactorization lu = new LUFactorization(Integer.parseInt(par[0]), Integer.parseInt(par[1]));
+        lu.calculate();
+        if(par[2].equals("y"))
+            lu.printResults();
     }
 }
