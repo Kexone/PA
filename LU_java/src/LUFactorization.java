@@ -52,38 +52,8 @@ public class LUFactorization {
         return mat;
     }
 
-    private Matrix calcLower(Matrix mat, Matrix perm){
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < i; j++) {
-                if(i == j) {
-                    break;
-                }
-                float tmp  = mat.elem(i,j);
-                if(tmp == 0) {
-                    continue;
-                }
-                for(int c = i-1; c >= 0; c--) {
-                    if(mat.row(c)[j] == 0) {
-                        continue;
-                    }
-                    for(int r = 0; r < rows; r++) {
-
-                        tmp = mat.row(i)[r] * mat.row(c)[r] - mat.row(i)[r] * mat.row(c)[r];
-                        float tmpP ;//= perm.elem(i,j);
-                        tmpP = perm.row(i)[r] * perm.row(c)[r] - perm.row(i)[r] * perm.row(c)[r];
-                        mat.set(i,j,tmp);
-                        perm.set(i,j,tmpP);
-                    }
-                }
-
-            }
-        }
-        return mat;
-    }
-
     private float[][] calcUpper(float[][] matA, float[][] unit){
- //       double[][] matA;
-   //     matA = mat.getMat();
+
         for (int k = 0; k < rows - 1; k++) {
             // Get upper val
             float multipliers[] = new float[rows + k + 1];
