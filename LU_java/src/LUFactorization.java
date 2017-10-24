@@ -81,7 +81,7 @@ public class LUFactorization {
         return mat;
     }
 
-    private float[][] calcUpper(float[][] matA, Matrix unit){
+    private float[][] calcUpper(float[][] matA, float[][] unit){
  //       double[][] matA;
    //     matA = mat.getMat();
         for (int k = 0; k < rows - 1; k++) {
@@ -98,13 +98,13 @@ public class LUFactorization {
             for (int y = k + 1; y < rows; y++) {
                 for (int x = 0; x <  rows; x++) {
                     matA[y][x] = Math.round(matA[y][x] + (multipliers[y] * matA[k][x]));
-                    unit.set(y,x, unit.elem(y, x) + (multipliers[y] * unit.elem(k, x)));
+                    unit[y][x] = Math.round(unit[y][x] + (multipliers[y] * unit[k][x]));
                 }
             }
         }
         if(matrixLT == null) {
             matrixLT = new Matrix(rows,rows);
-            this.matrixLT = unit;
+            this.matrixLT.setMat(unit);
 
         }
         return matA;
@@ -122,12 +122,14 @@ public class LUFactorization {
                 }
             }
         }
+        matrix.printMatrix();
 
         float[][] origMat = copy(matrix.getMat().clone());
         Matrix unitMat = new Matrix(rows,rows);
         unitMat.generateUnitMatrix();
-        this.matrixU.setMat(calcUpper(origMat, unitMat));
-        this.matrixL.setMat(calcUpper(matrixLT.getMat(),unitMat));
+        this.matrixU.setMat(calcUpper(origMat, unitMat.getMat()));
+        unitMat.generateUnitMatrix();
+        this.matrixL.setMat(calcUpper(matrixLT.getMat(),unitMat.getMat()));
     }
 
 
@@ -136,7 +138,7 @@ public class LUFactorization {
         this.matrixPerm.printMatrix();
         System.out.print("__________ \nLower Matrix\n");
         this.matrixL.printMatrix();
-        System.out.print("__________ \nUper Matrix\n");
+        System.out.print("__________ \nUpper Matrix\n");
         this.matrixU.printMatrix();
         System.out.print("__________ \nGenerated Matrix\n");
         matrix.printMatrix();

@@ -1,3 +1,4 @@
+import java.awt.peer.SystemTrayPeer;
 import java.util.Random;
 
 /**
@@ -22,7 +23,7 @@ public class Matrix {
         Random gen = new Random();
         for (int i = 0; i <rows; i++) {
             for (int j = 0; j < cols; j++) {
-                this.data[i][j] = (float) Math.round(gen.nextGaussian() * gen.nextInt(4) * 10) / 10;
+                this.data[i][j] = (float) Math.round(gen.nextFloat() * (100.0f - 0.0f) + 1.0f ) ;
             }
         }
     }
@@ -55,9 +56,15 @@ public class Matrix {
 
     public void printMatrix() {
         for ( int i = 0 ; i < rows ; i++ ) {
-            System.out.print("|");
+            int len;
+            System.out.print("| ");
             for( int j = 0 ; j < rows ; j++ ) {
-                System.out.print(data[i][j] + " ");
+                len = 5;
+                System.out.print(data[i][j]);
+                len -= String.valueOf((data[i][j])).length();
+                for (int d = 0; d < len; d++ ) {
+                    System.out.print(" ");
+                }
             }
             System.out.print("|\n");
         }
