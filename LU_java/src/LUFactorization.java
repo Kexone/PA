@@ -1,4 +1,8 @@
 import java.util.Random;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 
 /**
  * Created by Jakub on 24.10.2017.
@@ -12,10 +16,14 @@ public class LUFactorization {
     private Matrix matrixPerm;
     private int cThreads;
     private int rows;
+    private ExecutorService es;
+    private int start;
+    private int end;
 
     public LUFactorization(int rows, int countThreads) {
         this.rows = rows;
         this.cThreads = countThreads;
+        setThreads();
         setMat();
         initLUMatrix();
         initPermutationMatrix();
@@ -26,7 +34,15 @@ public class LUFactorization {
         this.matrix.generateMatrix();
     }
 
-    private void initLUMatrix() {
+    private void setThreads() {
+        es = Executors.newFixedThreadPool(cThreads);
+        for (int t = 0; t < cThreads; t++) {
+            this.start = t * (rows / cThreads);
+            this.end = (t + 1 == cThreads) ? rows : (t + 1) * (rows / cThreads);
+        }
+    }
+
+        private void initLUMatrix() {
         assert(this.rows == 0);
 
         this.matrixL = new Matrix(rows,rows);
@@ -39,31 +55,40 @@ public class LUFactorization {
     }
 
     private Matrix swapCols(Matrix mat, int firstC, int secondC) {
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < rows; j++) {
-                if(j == firstC || j == secondC) {
-                    float tmp = mat.elem(i, firstC);
-                    mat.set(i,firstC,mat.elem(i, secondC));
-                    mat.set(i,secondC,tmp);
-                    break;
+
+            System.out.print("prehodil jsem");
+            es.submit((()-> {
+                for (int i = start; i < end; i++) {
+                    for (int j = 0; j < rows; j++) {
+                        if (j == firstC || j == secondC) {
+                            float tmp = mat.elem(i, firstC);
+                            mat.set(i, firstC, mat.elem(i, secondC));
+                            mat.set(i, secondC, tmp);
+                            break;
+                        }
+                    }
                 }
-            }
-        }
+
+            }));
+        es.shutdown();
         return mat;
     }
 
     private float[][] calcUpper(float[][] matA, float[][] unit){
-
         for (int k = 0; k < rows - 1; k++) {
             // Get upper val
             float multipliers[] = new float[rows + k + 1];
             float upperVal = (matA[k][k] == 0) ? 1 : matA[k][k];
-
+            final int nK = k;
             // Calculate multipliers for each row
-            for (int i = k + 1; i <rows; i++) {
-                multipliers[i] = -(matA[i][k] / upperVal);
-            }
-
+            System.out.print("prehodil jsem");
+            es.submit((()-> {
+                for (int i = start; i < end; i++) {
+//                    for (int i = k + 1; i < rows; i++) {
+                        multipliers[i] = -(matA[i][nK] / upperVal);
+                    }
+                //}
+            }));
             // Calc mat
             for (int y = k + 1; y < rows; y++) {
                 for (int x = 0; x <  rows; x++) {
