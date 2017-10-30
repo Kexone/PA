@@ -74,14 +74,13 @@ public class LUFactorization {
         return mat;
     }
 
-    private float[][] calcUpper(float[][] matA, float[][] unit){
+    private float[][] calcOnMat(float[][] matA, float[][] unit){
         for (int k = 0; k < rows - 1; k++) {
-            // Get upper val
-            float multipliers[] = new float[rows + k + 1];
+            int nK = k;
             float upperVal = (matA[k][k] == 0) ? 1 : matA[k][k];
-            final int nK = k;
-            // Calculate multipliers for each row
-            System.out.print("prehodil jsem");
+            float multipliers[] = new float[rows + k + 1];
+            this.start = k * (rows / cThreads);
+            this.end = (k + 1 == cThreads) ? rows : (k + 1) * (rows / cThreads);
             es.submit((()-> {
                 for (int i = start; i < end; i++) {
 //                    for (int i = k + 1; i < rows; i++) {
@@ -89,13 +88,18 @@ public class LUFactorization {
                     }
                 //}
             }));
+            es.shutdown();
             // Calc mat
+  //          int y = k+1;
+//            es.submit((()-> {
             for (int y = k + 1; y < rows; y++) {
                 for (int x = 0; x <  rows; x++) {
-                    matA[y][x] = Math.round(matA[y][x] + (multipliers[y] * matA[k][x]));
-                    unit[y][x] = Math.round(unit[y][x] + (multipliers[y] * unit[k][x]));
+                    matA[y][x] = Math.round(matA[y][x] + (multipliers[y] * matA[nK][x]));
+                    unit[y][x] = Math.round(unit[y][x] + (multipliers[y] * unit[nK][x]));
                 }
             }
+       //     }));
+            es.shutdown();
         }
         if(matrixLT == null) {
             matrixLT = new Matrix(rows,rows);
@@ -119,12 +123,12 @@ public class LUFactorization {
         }
         matrix.printMatrix();
 
-        float[][] origMat = copy(matrix.getMat().clone());
+        float[][] origMat = java.util.Arrays.stream(matrix.getMat()).map(el -> el.clone()).toArray(float[][]::new);
         Matrix unitMat = new Matrix(rows,rows);
         unitMat.generateUnitMatrix();
-        this.matrixU.setMat(calcUpper(origMat, unitMat.getMat()));
+        this.matrixU.setMat(calcOnMat(origMat, unitMat.getMat()));
         unitMat.generateUnitMatrix();
-        this.matrixL.setMat(calcUpper(matrixLT.getMat(),unitMat.getMat()));
+        this.matrixL.setMat(calcOnMat(matrixLT.getMat(),unitMat.getMat()));
     }
 
 
