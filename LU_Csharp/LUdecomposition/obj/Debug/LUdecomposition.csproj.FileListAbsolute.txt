@@ -1,0 +1,6 @@
+C:\Users\Jakub\Source\PA\LU_Csharp\LUdecomposition\bin\Debug\LUdecomposition.exe.config
+C:\Users\Jakub\Source\PA\LU_Csharp\LUdecomposition\obj\Debug\LUdecomposition.csprojResolveAssemblyReference.cache
+C:\Users\Jakub\Source\PA\LU_Csharp\LUdecomposition\bin\Debug\LUdecomposition.exe
+C:\Users\Jakub\Source\PA\LU_Csharp\LUdecomposition\bin\Debug\LUdecomposition.pdb
+C:\Users\Jakub\Source\PA\LU_Csharp\LUdecomposition\obj\Debug\LUdecomposition.exe
+C:\Users\Jakub\Source\PA\LU_Csharp\LUdecomposition\obj\Debug\LUdecomposition.pdb

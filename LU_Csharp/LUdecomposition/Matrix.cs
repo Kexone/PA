@@ -10,9 +10,7 @@ namespace LUdecomposition
     {
         private int rows;
         private int cols;
-        private double[,] matrix;
-        private double[,] matrixL;
-        private double[,] matrixU;
+        private float[,] data;
 
 
 
@@ -20,21 +18,50 @@ namespace LUdecomposition
         {
             this.rows = rows;
             this.cols = cols;
-            this.matrix = new double[rows, cols];
-            InitLUMatrix();
+            this.data = new float[rows, cols];
         }
 
-        private void InitLUMatrix()
+
+        public void generateMatrix()
         {
-            //Assert(this.rows == this.cols);
-
-            this.matrixL = new double[rows, cols];
-            this.matrixU = new double[rows, cols];
-
+            Random gen = new Random();
             for (int i = 0; i < rows; i++)
             {
-                this.matrixU[i, i] = 1;
+                for (int j = 0; j < cols; j++)
+                {
+                    float range = 0.4f;
+                    int factor = (int) Math.Round(gen.NextDouble() * (100.0f - 0.0f) + 0.0f / range);
+                    this.data[i,j] = factor * range;
+                }
             }
+        }
+
+        public void generateUnitMatrix()
+        {
+            for (int i = 0; i < rows; i++)
+            {
+                this.data[i,i] = 1;
+            }
+        }
+
+        public float[,] getMat()
+        {
+            return (float[,]) data.Clone();
+        }
+
+        public void setMat(float[,] mat)
+        {
+            this.data = mat;
+        }
+
+        public void set(int indR, int indC, float value)
+        {
+            data[indR,indC] = value;
+        }
+
+        public float elem(int indR, int indC)
+        {
+            return data[indR,indC];
         }
 
         public void PrintMatrix()
@@ -44,7 +71,7 @@ namespace LUdecomposition
                 Console.Write("|");
                 for (int j = 0; j < cols; j++)
                 {
-                    Console.Write(this.matrixU[i, j] + " ");
+                    Console.Write(this.data[i, j] + " ");
                 }
                 Console.WriteLine("|");
             }
