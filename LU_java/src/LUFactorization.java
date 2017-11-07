@@ -1,8 +1,4 @@
 import java.util.Random;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.IntStream;
 
 /**
  * Created by Jakub on 24.10.2017.
@@ -16,14 +12,10 @@ public class LUFactorization {
     private Matrix matrixPerm;
     private int cThreads;
     private int rows;
-    private ExecutorService es;
-    private int start;
-    private int end;
 
     public LUFactorization(int rows, int countThreads) {
         this.rows = rows;
         this.cThreads = countThreads;
-        setThreads();
         setMat();
         initLUMatrix();
         initPermutationMatrix();
@@ -34,15 +26,7 @@ public class LUFactorization {
         this.matrix.generateMatrix();
     }
 
-    private void setThreads() {
-        es = Executors.newFixedThreadPool(cThreads);
-        for (int t = 0; t < cThreads; t++) {
-            this.start = t * (rows / cThreads);
-            this.end = (t + 1 == cThreads) ? rows : (t + 1) * (rows / cThreads);
-        }
-    }
-
-        private void initLUMatrix() {
+    private void initLUMatrix() {
         assert(this.rows == 0);
 
         this.matrixL = new Matrix(rows,rows);
@@ -55,55 +39,39 @@ public class LUFactorization {
     }
 
     private Matrix swapCols(Matrix mat, int firstC, int secondC) {
-
-            System.out.print("prehodil jsem");
-            es.submit((()-> {
-                for (int i = start; i < end; i++) {
-                    for (int j = 0; j < rows; j++) {
-                        if (j == firstC || j == secondC) {
-                            float tmp = mat.elem(i, firstC);
-                            mat.set(i, firstC, mat.elem(i, secondC));
-                            mat.set(i, secondC, tmp);
-                            break;
-                        }
-                    }
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < rows; j++) {
+                if(j == firstC || j == secondC) {
+                    float tmp = mat.elem(i, firstC);
+                    mat.set(i,firstC,mat.elem(i, secondC));
+                    mat.set(i,secondC,tmp);
+                    break;
                 }
-
-            }));
-        es.shutdown();
+            }
+        }
         return mat;
     }
 
-    private float[][] calcOnMat(float[][] matA, float[][] unit){
+    private float[][] operOnMat(float[][] matA, Matrix unit){
         for (int k = 0; k < rows - 1; k++) {
-            int nK = k;
-            float upperVal = (matA[k][k] == 0) ? 1 : matA[k][k];
+
             float multipliers[] = new float[rows + k + 1];
-            this.start = k * (rows / cThreads);
-            this.end = (k + 1 == cThreads) ? rows : (k + 1) * (rows / cThreads);
-            es.submit((()-> {
-                for (int i = start; i < end; i++) {
-//                    for (int i = k + 1; i < rows; i++) {
-                        multipliers[i] = -(matA[i][nK] / upperVal);
-                    }
-                //}
-            }));
-            es.shutdown();
-            // Calc mat
-  //          int y = k+1;
-//            es.submit((()-> {
+            float upperVal = (matA[k][k] == 0) ? 1 : matA[k][k];
+
+            for (int i = k + 1; i <rows; i++) {
+                multipliers[i] = -(matA[i][k] / upperVal);
+            }
+
             for (int y = k + 1; y < rows; y++) {
                 for (int x = 0; x <  rows; x++) {
-                    matA[y][x] = Math.round(matA[y][x] + (multipliers[y] * matA[nK][x]));
-                    unit[y][x] = Math.round(unit[y][x] + (multipliers[y] * unit[nK][x]));
+                    matA[y][x] = Math.round(matA[y][x] + (multipliers[y] * matA[k][x]));
+                    unit.set(y,x, unit.elem(y, x) + (multipliers[y] * unit.elem(k, x)));
                 }
             }
-       //     }));
-            es.shutdown();
         }
         if(matrixLT == null) {
             matrixLT = new Matrix(rows,rows);
-            this.matrixLT.setMat(unit);
+            this.matrixLT = unit;
 
         }
         return matA;
@@ -121,14 +89,13 @@ public class LUFactorization {
                 }
             }
         }
-        matrix.printMatrix();
 
         float[][] origMat = java.util.Arrays.stream(matrix.getMat()).map(el -> el.clone()).toArray(float[][]::new);
         Matrix unitMat = new Matrix(rows,rows);
         unitMat.generateUnitMatrix();
-        this.matrixU.setMat(calcOnMat(origMat, unitMat.getMat()));
+        this.matrixU.setMat(operOnMat(origMat, unitMat));
         unitMat.generateUnitMatrix();
-        this.matrixL.setMat(calcOnMat(matrixLT.getMat(),unitMat.getMat()));
+        this.matrixL.setMat(operOnMat(matrixLT.getMat(),unitMat));
     }
 
 
@@ -137,7 +104,7 @@ public class LUFactorization {
         this.matrixPerm.printMatrix();
         System.out.print("__________ \nLower Matrix\n");
         this.matrixL.printMatrix();
-        System.out.print("__________ \nUpper Matrix\n");
+        System.out.print("__________ \nUper Matrix\n");
         this.matrixU.printMatrix();
         System.out.print("__________ \nGenerated Matrix\n");
         matrix.printMatrix();
