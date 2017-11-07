@@ -1,4 +1,6 @@
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Jakub on 24.10.2017.
@@ -53,6 +55,7 @@ public class LUFactorization {
     }
 
     private float[][] operOnMat(float[][] matA, Matrix unit){
+
         for (int k = 0; k < rows - 1; k++) {
 
             float multipliers[] = new float[rows + k + 1];
@@ -68,6 +71,61 @@ public class LUFactorization {
                     unit.set(y,x, unit.elem(y, x) + (multipliers[y] * unit.elem(k, x)));
                 }
             }
+        }
+        if(matrixLT == null) {
+            matrixLT = new Matrix(rows,rows);
+            this.matrixLT = unit;
+
+        }
+        return matA;
+    }
+
+    private float[][] operOnMatPar(float[][] matA, Matrix unit){
+
+        for (int k = 0; k < rows - 1; k++) {
+
+            final int kN = rows - k;
+            final int normNThreads = (cThreads > kN) ? kN : cThreads;
+            float multipliers[] = new float[rows + k + 1];
+            float upperVal = (matA[k][k] == 0) ? 1 : matA[k][k];
+
+            ExecutorService executorService = Executors.newFixedThreadPool(normNThreads);
+            final int nK = k + 1;
+            final int cK = k;
+
+            for (int t = 0; t < normNThreads; t++) {
+                final int start = t * (kN / normNThreads) + nK;
+                final int end = (t + 1 == normNThreads) ? rows : (t + 1) * (kN / normNThreads) + nK;
+
+                executorService.submit(() -> {
+                    for (int i = start; i < end; i++) {
+                        multipliers[i] = -(matA[i][cK] / upperVal);
+                    }
+                });
+            }
+
+            // Join
+            executorService.shutdown();
+
+            // Init executor
+            executorService = Executors.newFixedThreadPool(normNThreads);
+            for (int t = 0; t < normNThreads; t++) {
+                final int start = t * (kN / normNThreads) + nK;
+                final int end = (t + 1 == normNThreads) ? rows : (t + 1) * (kN / normNThreads) + nK;
+
+                executorService.submit(() -> {
+                            for (int y = start; y < end; y++) {
+                                for (int x = 0; x < rows; x++) {
+                                    matA[y][x] = Math.round(matA[y][x] + (multipliers[y] * matA[cK][x]));
+                                    unit.set(y, x, unit.elem(y, x) + (multipliers[y] * unit.elem(cK, x)));
+                                }
+                            }
+                        }
+                );
+            }
+
+            // Join
+            executorService.shutdown();
         }
         if(matrixLT == null) {
             matrixLT = new Matrix(rows,rows);
@@ -93,9 +151,9 @@ public class LUFactorization {
         float[][] origMat = java.util.Arrays.stream(matrix.getMat()).map(el -> el.clone()).toArray(float[][]::new);
         Matrix unitMat = new Matrix(rows,rows);
         unitMat.generateUnitMatrix();
-        this.matrixU.setMat(operOnMat(origMat, unitMat));
+        this.matrixU.setMat(operOnMatPar(origMat, unitMat));
         unitMat.generateUnitMatrix();
-        this.matrixL.setMat(operOnMat(matrixLT.getMat(),unitMat));
+        this.matrixL.setMat(operOnMatPar(matrixLT.getMat(),unitMat));
     }
 
 
@@ -119,5 +177,4 @@ public class LUFactorization {
         }
         return tmp;
     }
-
 }
