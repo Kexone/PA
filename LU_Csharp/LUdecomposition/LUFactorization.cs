@@ -31,6 +31,12 @@ namespace LUdecomposition
             this.matrix.generateMatrix();
         }
 
+        public void setAgain()
+        {
+            initLUMatrix();
+            initPermutationMatrix();
+        }
+
         private void initLUMatrix()
         {
             this.matrixL = new Matrix(rows, rows);

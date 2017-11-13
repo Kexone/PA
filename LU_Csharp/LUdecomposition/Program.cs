@@ -13,17 +13,19 @@ namespace LUdecomposition
     class Program
     {
         static float totalTime;
+        private static LUFactorization lu;
         static void Main(string[] args)
         {
             while (true)
             {
                 Console.WriteLine("Matrix rows, verbose:    [int int]");
                 string[] input = Console.ReadLine().Split(' ');
-                if (input.Length != 2)
+                if (input.Length < 1)
                 {
                     Console.WriteLine("Error input, pls select it like '1 1'");
                     continue;
                 }
+                lu = new LUFactorization(Int32.Parse(input[0]), Int32.Parse(input[0]));
                 Run(input);
                 Console.WriteLine("LU Factorization non-parallel: " + totalTime + "s");
                 Run(input, true);
@@ -34,7 +36,11 @@ namespace LUdecomposition
 
         static void Run(string[] par, bool parallel = false)
         {
-            LUFactorization lu = new LUFactorization(Int32.Parse(par[1]), Int32.Parse(par[0]));
+            
+            if (parallel)
+            {
+                lu.setAgain();
+            }
             long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             lu.calculate(parallel);
             long time = DateTimeOffset.Now.ToUnixTimeMilliseconds()  - start;
