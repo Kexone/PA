@@ -1,5 +1,5 @@
 #include "luDecomposition.h"
-
+#include <omp.h>
 void LuDecomposition::setMat()
 {
 	matrix = Matrix(rows, rows);
@@ -20,6 +20,7 @@ void LuDecomposition::initPermutationMatrix()
 
 Matrix LuDecomposition::swapCols(Matrix mat, int firstC, int secondC)
 {
+	std::cout << "PICI" << std::endl;
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < rows; j++) {
 			if (j == firstC || j == secondC) {
@@ -33,58 +34,54 @@ Matrix LuDecomposition::swapCols(Matrix mat, int firstC, int secondC)
 	return mat;
 }
 
-std::vector<std::vector<float>> LuDecomposition::operOnMat(std::vector<std::vector<float>> matA, Matrix unit)
+void LuDecomposition::operOnMat(Matrix &mat, Matrix &unit)
 {
+	std::vector<std::vector<float>> matdata = mat.getMat();
+	std::vector<std::vector<float>> unitdata = unit.getMat();
 	for (int k = 0; k < rows - 1; k++) {
 
 		float* multipliers = new float[rows + k + 1];
-		float upperVal = (matA[k][k] == 0) ? 1 : matA[k][k];
+		float upperVal = (matdata[k][k] == 0) ? 1 : matdata[k][k];
 
 		for (int i = k + 1; i <rows; i++) {
-			multipliers[i] = -(matA[i][k] / upperVal);
+			multipliers[i] = -(matdata[i][k] / upperVal);
 		}
 
 		for (int y = k + 1; y < rows; y++) {
 			for (int x = 0; x < rows; x++) {
-				matA[y][x] = (matA[y][x] + (multipliers[y] * matA[k][x]));
-				unit.set(y, x, unit.elem(y, x) + (multipliers[y] * unit.elem(k, x)));
+				matdata[y][x] = (matdata[y][x] + (multipliers[y] * matdata[k][x]));
+				unitdata[y][x] = unitdata[y][x] + (multipliers[y] * unitdata[k][x]);
 			}
 		}
 	}
-	if(matrixLT.getMat().empty()) {
-		this->matrixLT = Matrix(rows, rows);
-		this->matrixLT = unit;
-
-	}
-	return matA;
+	mat.setMat(matdata);
+	unit.setMat(unitdata);
 }
 
-std::vector<std::vector<float>> LuDecomposition::operOnMatPar(std::vector<std::vector<float>> matA, Matrix unit)
+void LuDecomposition::operOnMatPar(Matrix &mat, Matrix &unit)
 {
+	std::vector<std::vector<float>> matdata = mat.getMat();
+	std::vector<std::vector<float>> unitdata = unit.getMat();
 	for (int k = 0; k < rows - 1; k++) {
 
-		float* multipliers = new float[rows + k + 1];
-		float upperVal = (matA[k][k] == 0) ? 1 : matA[k][k];
+		float *multipliers =  new float[rows + k + 1];
+		float upperVal = (matdata[k][k] == 0) ? 1 : matdata[k][k];
 
-		#pragma omp parallel for
+		#pragma omp parallel for shared(upperVal)
 		for (int i = k + 1; i <rows; i++) {
-			multipliers[i] = -(matA[i][k] / upperVal);
+			multipliers[i] = -(matdata[i][k] / upperVal);
 		}
 
-		#pragma omp parallel for
+		#pragma omp parallel for shared(multipliers)
 		for (int y = k + 1; y < rows; y++) {
 			for (int x = 0; x < rows; x++) {
-				matA[y][x] = (matA[y][x] + (multipliers[y] * matA[k][x]));
-				unit.set(y, x, unit.elem(y, x) + (multipliers[y] * unit.elem(k, x)));
+				matdata[y][x] = (matdata[y][x] + (multipliers[y] * matdata[k][x]));
+				unitdata[y][x] = unitdata[y][x] + (multipliers[y] * unitdata[k][x]);
 			}
 		}
 	}
-	if (matrixLT.getMat().empty()) {
-		this->matrixLT = Matrix(rows, rows);
-		this->matrixLT = unit;
-
-	}
-	return matA;
+	mat.setMat(matdata);
+	unit.setMat(unitdata);
 }
 
 LuDecomposition::LuDecomposition(int rows)
@@ -95,7 +92,7 @@ LuDecomposition::LuDecomposition(int rows)
 	initPermutationMatrix();
 }
 
-void LuDecomposition::calculate(bool paralel = false)
+void LuDecomposition::calculate()
 {
 	for (int i = 0; i < rows; i++) {
 		if (matrix.row(i)[i] == 0) {
@@ -107,13 +104,47 @@ void LuDecomposition::calculate(bool paralel = false)
 			}
 		}
 	}
-
-	std::vector<std::vector<float>> origMat = matrix.getMat();
 	Matrix unitMat = Matrix(rows, rows);
 	unitMat.generateUnitMatrix();
-	this->matrixU.setMat(operOnMat(origMat, unitMat));
+
+	matrixLT = Matrix(rows, rows);
+	matrixLT.generateUnitMatrix();
+	matrixU.setMat(matrix.getMat());
+
+	operOnMat(matrixU, matrixLT);
+	operOnMat(matrixLT, unitMat);
+
+	matrixL = unitMat;
+
+}
+
+void LuDecomposition::calculatePar()
+{
+	#pragma omp parallel for
+	for (int i = 0; i < rows; i++) {
+		if (matrix.row(i)[i] == 0) {
+			for (int j = 0; j < rows; j++) {
+				if (matrix.row(i)[j] != 0) {
+					matrix = swapCols(matrix, i, j);
+					matrixPerm = swapCols(matrixPerm, i, j);
+				}
+			}
+		}
+	}
+	Matrix unitMat = Matrix(rows, rows);
 	unitMat.generateUnitMatrix();
-	this->matrixL.setMat(operOnMat(matrixLT.getMat(), unitMat));
+
+	matrixLT = Matrix(rows, rows);
+	matrixLT.generateUnitMatrix();
+	matrixU.setMat(matrix.getMat());
+//	matrixU.printMatrix();
+
+	operOnMatPar(matrixU, matrixLT);
+	//matrixU.printMatrix();
+	operOnMatPar(matrixLT, unitMat);
+	
+	matrixL = unitMat;
+
 }
 
 void LuDecomposition::printResults()
@@ -126,4 +157,11 @@ void LuDecomposition::printResults()
 	this->matrixU.printMatrix();
 	printf("__________ \nGenerated Matrix\n");
 	matrix.printMatrix();
+}
+
+void LuDecomposition::clearMats()
+{
+	matrixLT.clearMat();
+	matrixL.clearMat();
+	matrixU.clearMat();
 }

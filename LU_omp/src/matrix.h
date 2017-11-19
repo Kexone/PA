@@ -22,6 +22,7 @@ public:
 	void set(int indR, int indC, float value);
 	float elem(int indR, int indC);
 	void printMatrix();
+	void clearMat();
 
 };
 

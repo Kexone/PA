@@ -88,3 +88,9 @@ void Matrix::printMatrix()
 	printf("\n");
 }
 
+void Matrix::clearMat()
+{
+	data.clear();
+	fillVector();
+}
+

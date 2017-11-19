@@ -8,8 +8,8 @@ private:
 	void initLUMatrix();
 	void initPermutationMatrix();
 	Matrix swapCols(Matrix mat, int firstC, int secondC);
-	std::vector< std::vector < float > > operOnMat(std::vector< std::vector< float >> matA, Matrix unit);
-	std::vector< std::vector < float > > operOnMatPar(std::vector< std::vector< float >> matA, Matrix unit);
+	void operOnMat(Matrix &matA, Matrix &unit);
+	void operOnMatPar(Matrix &matA, Matrix &unit);
 
 	Matrix matrix;
 	Matrix matrixL;
@@ -21,6 +21,8 @@ private:
 
 public:
 	LuDecomposition(int rows);
-	void calculate(bool paralel);
+	void calculate();
+	void calculatePar();
 	void printResults();
+	void clearMats();
 };
