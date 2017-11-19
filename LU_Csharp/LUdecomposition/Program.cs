@@ -12,8 +12,6 @@ namespace LUdecomposition
 {
     class Program
     {
-        static float totalTime;
-        private static LUFactorization lu;
         static void Main(string[] args)
         {
             while (true)
@@ -25,27 +23,30 @@ namespace LUdecomposition
                     Console.WriteLine("Error input, pls select it like '1 1'");
                     continue;
                 }
-                lu = new LUFactorization(Int32.Parse(input[0]), Int32.Parse(input[0]));
+                if (input[0].Equals("0"))
+                    break;
+
                 Run(input);
-                Console.WriteLine("LU Factorization non-parallel: " + totalTime + "s");
-                Run(input, true);
-                Console.WriteLine("LU Factorization parallel: " + totalTime + "s");
             }
         }
 
 
-        static void Run(string[] par, bool parallel = false)
+        static void Run(string[] par)
         {
-            
-            if (parallel)
-            {
-                lu.setAgain();
-            }
+            LUFactorization lu = new LUFactorization(Int32.Parse(par[0]), Int32.Parse(par[0]));
             long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            lu.calculate(parallel);
-            long time = DateTimeOffset.Now.ToUnixTimeMilliseconds()  - start;
-            totalTime = time / 1000.0f;
-            if(par[1].Equals("1"))
+            lu.calculate();
+            start = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start;
+            Console.WriteLine("LU Factorization non-parallel: " + start / 1000.0f + "s");
+           // lu.printResults();
+            lu.clearMat();
+            
+            start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            lu.calculatePar();
+            start = DateTimeOffset.Now.ToUnixTimeMilliseconds()  - start;
+            Console.WriteLine("LU Factorization parallel: " + start / 1000.0f + "s");
+
+            if (par[1].Equals("1"))
                 lu.printResults();
         }
     }

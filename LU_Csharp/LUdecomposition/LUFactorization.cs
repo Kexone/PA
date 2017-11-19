@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -31,10 +32,12 @@ namespace LUdecomposition
             this.matrix.generateMatrix();
         }
 
-        public void setAgain()
+        public void clearMat()
         {
-            initLUMatrix();
-            initPermutationMatrix();
+            matrixLT.clearMatrix();
+            matrixL.clearMatrix();
+            matrixU.clearMatrix();
+            matrixLT = null;
         }
 
         private void initLUMatrix()
@@ -67,7 +70,7 @@ namespace LUdecomposition
             return mat;
         }
 
-        private float[,] OperOnMat(float[,] matA, float[,] unit)
+        private float[,] OperOnMat(float[,] matA, float[,] unit, bool getUnit)
         {
 
             for (int k = 0; k < rows - 1; k++)
@@ -85,7 +88,7 @@ namespace LUdecomposition
                 {
                     for (int x = 0; x < rows; x++)
                     {
-                        matA[y, x] = (float)Math.Round(matA[y, x] + (multipliers[y] * matA[k, x]));
+                        matA[y, x] = matA[y, x] + (multipliers[y] * matA[k, x]);
                         unit[y, x] = unit[y, x] + (multipliers[y] * unit[k, x]);
                     }
                 }
@@ -94,54 +97,56 @@ namespace LUdecomposition
             {
                 matrixLT = new Matrix(rows, rows);
                 this.matrixLT.setMat(unit);
-
             }
+            if (getUnit)
+                return unit;
             return matA;
         }
 
-        private float[,] OperOnMatPar(float[,] matA, float[,] unit)
+        private float[,] OperOnMatPar(float[,] matA, float[,] unit, bool getUnit)
         {
-
-            for (int k = 0; k < rows - 1; k++)
+            for (int k = 0; k < rows; k++)
             {
 
                 float[] multipliers = new float[rows + k + 1];
                 float upperVal = (matA[k, k] == 0) ? 1 : matA[k, k];
-
-                Parallel.For(0, rows, index =>
+                int cK = k;
+                Parallel.For(k+1, rows, index =>
                 {
-                    for (int i = index; i < rows; i++)
-                    {
-                        multipliers[i] = -(matA[i, k] / upperVal);
-                    }
+                  //  for (int i = 0; i < rows; i++)
+                   // {
+                        multipliers[index] = -(matA[index, cK] / upperVal);
+//                    }
+
                 });
-                Parallel.For(0, rows, y =>
+                Parallel.For(k+1, rows, y =>
                 {
                     for (int x = 0; x < rows; x++)
-                    {
-                        matA[y, x] = (float) Math.Round(matA[y, x] + (multipliers[y]*matA[k, x]));
-                        unit[y, x] = unit[y, x] + (multipliers[y]*unit[k, x]);
-                    }
+                        {
+                            matA[y, x] = matA[y, x] + (multipliers[y]*matA[cK, x]);
+                            unit[y, x] = unit[y, x] + (multipliers[y]*unit[cK, x]);
+                        }
                 });
             }
             if (matrixLT == null)
             {
                 matrixLT = new Matrix(rows, rows);
                 this.matrixLT.setMat(unit);
-
             }
+            if (getUnit)
+                return unit;
             return matA;
         }
 
-        public void calculate(bool parallel = false)
+        public void calculate()
         {
             for (int i = 0; i < rows; i++)
             {
-                if (matrix.elem(i,i) == 0)
+                if (matrix.elem(i, i) == 0)
                 {
                     for (int j = 0; j < rows; j++)
                     {
-                        if (matrix.elem(i,j) != 0)
+                        if (matrix.elem(i, j) != 0)
                         {
                             matrix = swapCols(matrix, i, j);
                             matrixPerm = swapCols(matrixPerm, i, j);
@@ -149,26 +154,38 @@ namespace LUdecomposition
                     }
                 }
             }
-            float[,] origMat = (float[,])this.matrix.getMat().Clone(); ;
+            float[,] origMat = (float[,])this.matrix.getMat().Clone();
             Matrix unitMat = new Matrix(rows, rows);
             unitMat.generateUnitMatrix();
-            if (parallel)
-            {
-                this.matrixU.setMat(OperOnMatPar(origMat, unitMat.getMat()));
-                unitMat.generateUnitMatrix(); ;
-                this.matrixL.setMat(OperOnMatPar(matrixLT.getMat(), unitMat.getMat()));
-            }
-            else
-            {
-                this.matrixU.setMat(OperOnMat(origMat, unitMat.getMat()));
-                unitMat.generateUnitMatrix(); ;
-                this.matrixL.setMat(OperOnMat(matrixLT.getMat(), unitMat.getMat()));
-            }
             
-            
-            
+            this.matrixU.setMat(OperOnMat(matrix.getMat(), unitMat.getMat(), false));
+            unitMat.generateUnitMatrix();
+            this.matrixL.setMat(OperOnMat(matrixLT.getMat(), unitMat.getMat(), true));
+        }
 
-
+        public void calculatePar()
+        {
+            Parallel.For(0, rows, i =>
+            {
+                if (matrix.elem(i, i) == 0)
+                {
+                    for (int j = 0; j < rows; j++)
+                    {
+                        if (matrix.elem(i, j) != 0)
+                        {
+                            matrix = swapCols(matrix, i, j);
+                            matrixPerm = swapCols(matrixPerm, i, j);
+                        }
+                    }
+                }
+            });
+            
+            float[,] origMat = (float[,])this.matrix.getMat().Clone();
+            Matrix unitMat = new Matrix(rows, rows);
+            unitMat.generateUnitMatrix();
+            this.matrixU.setMat(OperOnMatPar(origMat, unitMat.getMat(), false));
+            unitMat.generateUnitMatrix();
+            this.matrixL.setMat(OperOnMatPar(matrixLT.getMat(), unitMat.getMat(), true));
         }
 
 
@@ -183,5 +200,21 @@ namespace LUdecomposition
             Console.Write("__________ \nGenerated Matrix\n");
             matrix.PrintMatrix();
         }
+
+        public void test(float[,] data)
+        {
+            for (int i = 0; i < rows; i++)
+            {
+                Console.Write("|");
+                for (int j = 0; j < rows; j++)
+                {
+                    Console.Write(data[i, j] + " ");
+                }
+                Console.WriteLine("|");
+            }
+        }
     }
+
+
+   
 }

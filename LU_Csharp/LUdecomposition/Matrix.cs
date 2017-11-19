@@ -40,7 +40,18 @@ namespace LUdecomposition
         {
             for (int i = 0; i < rows; i++)
             {
-                this.data[i,i] = 1;
+                this.data[i, i] = 1;
+            }
+        }
+
+        public void clearMatrix()
+        {
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < rows; j++)
+                {
+                    this.data[i, j] = 0;
+                }
             }
         }
 
@@ -71,8 +82,15 @@ namespace LUdecomposition
                 Console.Write("|");
                 for (int j = 0; j < cols; j++)
                 {
-                    Console.Write(this.data[i, j] + " ");
+                    int len = 5;
+                    Console.Write(this.data[i, j].ToString("0.00") + " ");
+                    len -= (Math.Abs(data[i, j]).ToString().Length);
+                    for (int m = 0; m < len; m++)
+                    {
+                        Console.Write(" ");
+                    }
                 }
+                
                 Console.WriteLine("|");
             }
         }
